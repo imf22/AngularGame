@@ -56,7 +56,7 @@ namespace angulargame
             }
 
             // Shoot
-            if (Input.GetMouseButton(0))
+            if (Input.GetMouseButton(0) || Input.GetKey(KeyCode.J))
             {
                 VirtualInputManager.Instance.Shoot = true;
             }
@@ -66,7 +66,7 @@ namespace angulargame
             }
 
             // Dash
-            if (Input.GetMouseButtonDown(1))
+            if (Input.GetMouseButtonDown(1) || Input.GetKey(KeyCode.K))
             {
                 VirtualInputManager.Instance.Dash = true;
             }
@@ -75,8 +75,21 @@ namespace angulargame
                 VirtualInputManager.Instance.Dash = false;
             }
 
+            // Pause
+            if (Input.GetKey(KeyCode.P) )
+            {
+                VirtualInputManager.Instance.pause = true;
+            }
+            else
+            {
+                VirtualInputManager.Instance.pause = false;
+            }
+
+
+            // DEBUG KEYS
+
             // Reset Position reset
-            if (Input.GetKey(KeyCode.R))
+            if (Input.GetKey(KeyCode.Alpha1))
             {
                 VirtualInputManager.Instance.reset = true;
             }
@@ -85,6 +98,25 @@ namespace angulargame
                 VirtualInputManager.Instance.reset= false;
             }
 
+            // Debug increase wave
+            if (Input.GetKeyDown(KeyCode.Alpha2))
+            {
+                VirtualInputManager.Instance.plus = true;
+            }
+            else
+            {
+                VirtualInputManager.Instance.plus = false;
+            }
+
+            // Debug increase wave
+            if (Input.GetKeyDown(KeyCode.Alpha3))
+            {
+                VirtualInputManager.Instance.hardMode = true;
+            }
+            else
+            {
+                VirtualInputManager.Instance.hardMode = false;
+            }
 
         }
     }

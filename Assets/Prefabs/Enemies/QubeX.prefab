@@ -338,10 +338,11 @@ MonoBehaviour:
   - {fileID: 4138738053616310272}
   projectile: {fileID: 4933049306033229583, guid: e3547cfa529df0b4e8109fd2ae3368c5, type: 3}
   cooldown: 0
-  shotPower: 50
+  shotPower: 25
   firerate: 1
   projectileLifetime: 1
   projectileScale: 2
+  PointsValue: 15
 --- !u!1 &4138738053607811709
 GameObject:
   m_ObjectHideFlags: 0

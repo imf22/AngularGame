@@ -21,6 +21,8 @@ namespace angulargame
         private bool ShootRight = true;
         private bool ShootUp = true;
         private bool ShootDown = true;
+
+        private float _FIRERATE_CAP = 0.1f;
         
 
 
@@ -59,20 +61,20 @@ namespace angulargame
             {
                 for (int i = 0; i < muzzelpoint.Length; i++)
                 {
-                    if (ULDRFiring[i])
-                    {
+                    
                         // Instantiate projectile
                         GameObject currentProjectile = (GameObject)Instantiate(projectile, muzzelpoint[i].position, muzzelpoint[i].rotation);
 
                         // Set scale
                         currentProjectile.transform.localScale = currentProjectile.transform.localScale * projectileScale;
 
+
                         // Add force to projectile
                         currentProjectile.GetComponent<Rigidbody>().AddForce(muzzelpoint[i].up * shotPower * 10);
 
                         // Destroy Projectile at end of its lifetime
                         Destroy(currentProjectile, projectileLifetime);
-                    }
+                    
 
                     
                     
@@ -84,5 +86,52 @@ namespace angulargame
                 shotcountdown = firerate;
             }
         }
+
+        // https://answers.unity.com/questions/313398/is-it-possible-to-get-a-prefab-object-from-its-ass.html
+        private UnityEngine.Object LoadPrefabFromFile(string filename)
+        {
+            Debug.Log("Trying to load LevelPrefab from file (" + filename + ")...");
+            var loadedObject = Resources.Load("Entities/" + filename);
+            if (loadedObject == null)
+            {
+                throw new System.IO.FileNotFoundException("...no file found - please check the configuration");
+            }
+            return loadedObject;
+        }
+
+        // Upgrade Methods
+        public void upgradeFireRate()
+        {
+            if (firerate > _FIRERATE_CAP)
+            {
+                firerate -= 0.1f;
+                Debug.Log("Firerate Upgraded! " + firerate);
+            }
+        }
+
+        internal void upgradeProjSize()
+        {
+            projectileScale += 0.2f;
+            Debug.Log("Projectile Size Upgraded! " + projectileScale);
+        }
+
+        internal void upgradeProjSpeedUp()
+        {
+            shotPower += 20f;
+            Debug.Log("Projectile Speed Increased! " + shotPower);
+        }
+
+        internal void upgradeProjSpeedDown()
+        {
+            shotPower -= 20f;
+            Debug.Log("Projectile Speed Slowed! " + shotPower);
+        }
+
+        internal void upgradeWideShot()
+        {
+            GameObject wideshot = (GameObject) LoadPrefabFromFile("WideProjectile");
+            projectile = wideshot;
+        }
     }
 }
+

@@ -15,7 +15,11 @@ namespace angulargame
         public bool Dash;
 
         public bool reset;
-        
+        public bool plus;
+        public bool pause;
+
+        public bool hardMode { get; internal set; }
+
         // TO DO
         // Pause Button
     }

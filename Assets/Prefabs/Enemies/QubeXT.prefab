@@ -326,7 +326,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bd8a302a2383e7409edd8d63eaff788, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 5
+  speed: 3
   damageTick: 1
   enemySightRange: 5
   playerMask:
@@ -343,10 +343,11 @@ MonoBehaviour:
   - {fileID: 4138738053616310272}
   projectile: {fileID: 4933049306033229583, guid: e3547cfa529df0b4e8109fd2ae3368c5, type: 3}
   cooldown: 0
-  shotPower: 50
-  firerate: 1
+  shotPower: 25
+  firerate: 2
   projectileLifetime: 1
   projectileScale: 2
+  PointsValue: 50
 --- !u!1 &4138738053607811709
 GameObject:
   m_ObjectHideFlags: 0

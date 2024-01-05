@@ -30,12 +30,19 @@ public class BasicEnemyAI : MonoBehaviour
 
     float actionCountdown;
 
+    // Scoring Points
+    public int PointsValue = 0;
+
+
     // Start is called before the first frame update
     void Start()
     {
+        
+
         // Set action ready
         actionCountdown = 0f;
         initialPlayerSearch();
+
 
         //target = GameObject.Find("PlayerCube");
         //DetectPlayer();
@@ -57,6 +64,13 @@ public class BasicEnemyAI : MonoBehaviour
             // Will auto fire once detected
             OnDetect();
 
+        }
+        else
+        {
+            if(GameObject.FindGameObjectsWithTag("Player").Length > 0)
+            {
+                target = GameObject.FindGameObjectsWithTag("Player")[0];
+            }
         }
     }
 
@@ -159,5 +173,18 @@ public class BasicEnemyAI : MonoBehaviour
         }
 
         yield return new WaitForSeconds(0.1f);
+    }
+
+    public int getEnemyPoints()
+    {
+        return PointsValue;
+    }
+
+    public void destorySelfScoring(int multiplier = 1)
+    {
+        // Score Points
+        GameObject.Find("Score").GetComponent<ScoreScript>().addToScore(PointsValue * multiplier);
+
+        Destroy(this.gameObject);
     }
 }

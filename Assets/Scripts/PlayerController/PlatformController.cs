@@ -8,17 +8,17 @@ namespace angulargame
 {
     public class PlatformController : MonoBehaviour
     {
-        public float playerHealth = 4;
+        public int maxPlayerHealth = 4;
+        public int playerHealth = 4;
         public float walkSpeed = 10f;
         public float jumpForce = 10f;
         public Transform groundCheck;
+        private Rigidbody _rigidbody;
+
         public float groundCheckRadius = 0.2f;
         public LayerMask groundMask;
-        
-    
-        float dashTimer;
+        private FireProjectile ProjectileLauncher;
 
-        private Rigidbody _rigidbody;
         private bool _isGrounded;
         private float _scaleZ;
         private float _moveInput;
@@ -34,12 +34,17 @@ namespace angulargame
         private bool _canDash = true;
         private bool _isDashing = false;
         private Vector3 hitbox;
+        float dashTimer;
+        private float _MINIMUM_DASH_COOLDOWN = 0.6f;
 
         private Coroutine _DashingCo;
         private Coroutine _DestroyEnemyCoRu = null;
         private Coroutine _DestroyProjectileCoRu = null;
-        private BoxCollider _collider;
 
+        private BoxCollider _collider;
+        //private MeshCollider _collider;
+
+        private AudioSource GlobalAudio;
         public AudioSource _audioSource;
         public AudioClip DeathKickSFX;
         public AudioClip DashSFX;
@@ -49,19 +54,38 @@ namespace angulargame
         public AudioClip DeathSFX;
         private bool jumpSFXPlayed = false;
 
+        public GameObject DeathVFX;
+
 
         private Collider[] destroyedEnemies;
         private Collider[] destroyedProjectiles;
 
         public bool newPlayerGODesign = true;
 
+        public static event Action OnPlayerDamaged;
+        public static event Action OnPlayerDeath;
+
+        //private GameObject ScoringSystem;
+        private ScoreScript ScoringSystem;
+
 
         // Start is called before the first frame update
         void Start()
         {
+            // Set player object name
+            this.gameObject.name = "PlayerCube";
+
+            // Get Projectile Component
+            ProjectileLauncher = this.GetComponentInChildren<FireProjectile>();
+
+            // Get Global audio source
+            GlobalAudio = GameObject.Find("GlobalAudioSource0").GetComponent<AudioSource>();
+
             // For Normal movement
             _rigidbody = GetComponent<Rigidbody>();
+
             _collider = GetComponent<BoxCollider>();
+            //_collider = GetComponent<MeshCollider>();
 
             _scaleZ = transform.localScale.z;
 
@@ -71,8 +95,12 @@ namespace angulargame
             _DestroyEnemyCoRu = StartCoroutine(SequentialDestroy(destroyedEnemies));
 
             // Connect to Hp UI
-            GameObject.Find("GameManager").GetComponent<HealthVisuals>().GetComponent<tempShowPlayerHealth>().setPlayer(this.gameObject);
-            GameObject.Find("GameManager").GetComponent<HealthVisuals>().GetComponent<tempShowPlayerHealth>().startHpUI();
+            GameObject temp = GameObject.Find("hpDisplay");
+            temp.GetComponent<tempShowPlayerHealth>().setPlayer(this.gameObject);
+            temp.GetComponent<tempShowPlayerHealth>().startHpUI();
+
+            ScoringSystem = GameObject.Find("Score").GetComponent<ScoreScript>();
+
         }
 
         // Update is called once per frame
@@ -91,6 +119,8 @@ namespace angulargame
             if(Physics.OverlapSphere(groundCheck.position, groundCheckRadius, groundMask).Length > 0)
             {
                 _isGrounded = true;
+                ScoringSystem.resetCombo();
+
             }
             else
             {
@@ -112,6 +142,25 @@ namespace angulargame
             {
                 _DashingCo = StartCoroutine(Dash());
             }
+
+            if (VirtualInputManager.Instance.plus)
+            {
+                print("WAVE INCREASE");
+                GameObject.Find("SpawnerController").GetComponent<SpawnController>().waveUpKey();
+            }
+
+            if (VirtualInputManager.Instance.hardMode)
+            {
+                print("HARD MODE");
+                GameObject.Find("SpawnerController").GetComponent<SpawnController>().enableHardMode();
+            }
+
+            if (VirtualInputManager.Instance.pause)
+            { 
+                GameObject.Find("GameManager").GetComponent<pauseMenu>().Pause();
+            }
+
+
         }
 
 
@@ -225,14 +274,18 @@ namespace angulargame
             if (debugDash) CreateDashBox();
 
             // Set collided projectiles and enemies to be destroyed
-            if (_DestroyProjectileCoRu != null)
+            // NOTE TO SELF: These coroutines will always trigger making this check unecessary 
+            if (destroyedProjectiles.Length >= 1)
+            //if (_DestroyProjectileCoRu != null)
             {
                 StopCoroutine(_DestroyProjectileCoRu);
                 _DestroyProjectileCoRu = StartCoroutine(SequentialDestroy(destroyedProjectiles));
             }
 
-            if (_DestroyEnemyCoRu != null)
+            //if (_DestroyEnemyCoRu != null)
+            if (destroyedEnemies.Length >= 1)
             {
+                ScoringSystem.addCombo();
                 StopCoroutine(_DestroyEnemyCoRu);
                 _DestroyEnemyCoRu = StartCoroutine(SequentialDestroy(destroyedEnemies));
             }
@@ -244,15 +297,14 @@ namespace angulargame
             // END DASHING
             // TODO : Diable trail effect here
             _rigidbody.useGravity = true;
-            //_isDashing = false;
-            //_collider.enabled = true;
 
 
             //Dash cooldown
-            if (_DestroyEnemyCoRu != null)
+            //Debug.Log("Active: " + _DestroyEnemyCoRu);
+            if (destroyedEnemies.Length >= 1)
             {
                 // Give small vertical boost on kill and reset dash
-                _rigidbody.velocity = new Vector3(0, 1, 0);
+                _rigidbody.velocity = new Vector3(0, 5, 0);
                 yield return new WaitForSeconds(0.1f);
                 _isDashing = false;
                 //_collider.enabled = true;
@@ -295,9 +347,20 @@ namespace angulargame
                     }
                     else 
                     {
-                        termsList.Add(setToDestroy[j]);
-                        Destroy(setToDestroy[j].transform.parent.gameObject);
-
+                        if(setToDestroy[j] != null)
+                        {
+                            termsList.Add(setToDestroy[j]);
+                            if(setToDestroy[j].tag == "Projectile")
+                            {
+                                Destroy(setToDestroy[j].gameObject);
+                            }
+                            else
+                            {
+                                setToDestroy[j].transform.parent.gameObject.GetComponent<BasicEnemyAI>().destorySelfScoring(10);
+                                //Destroy(setToDestroy[j].transform.parent.gameObject);
+                            }
+                        }
+                        
                         //TODO: Move enemy destroyed sound handling to enemy or a handler.
                         _audioSource.PlayOneShot(DeathKickSFX);
 
@@ -309,32 +372,124 @@ namespace angulargame
             yield return null;
         }
 
-        public void reducePlayerHealth(float dmg)
+        public void reducePlayerHealth(int dmg)
         {
             if (!_isDashing)
             {
 
                 playerHealth -= dmg;
+                OnPlayerDamaged?.Invoke();
+
+                GlobalAudio.PlayOneShot(HitSFX);
 
                 if (playerHealth <= 0)
                 {
+                    // Play Death Sound and SFS
+                    GlobalAudio.PlayOneShot(DeathSFX);
+                    GameObject Explosion = (GameObject)Instantiate(DeathVFX, this.transform.position, Quaternion.identity);
                     if (newPlayerGODesign)
                     {
+                        OnPlayerDeath?.Invoke();
                         Destroy(this.gameObject);
                     }
                     else
                     {
+                        OnPlayerDeath?.Invoke();
                         Destroy(this.transform.parent.gameObject);
                     }
+
                 }
 
             }
         }
 
-        public float getPlayerHealth()
+        public void healAmount(int hpRecovered)
+        {
+            playerHealth += hpRecovered;
+
+            if (playerHealth > maxPlayerHealth) playerHealth = maxPlayerHealth;
+        }
+
+        public int getPlayerHealth()
         {
             return this.playerHealth;
         }
-    }
+        
+        public int getMaxPlayerHealth()
+        {
+            return this.maxPlayerHealth;
+        }
 
+        // UPGRADE METHODS
+
+        // Swap Character
+        internal void swapCharacter(string character)
+        {
+            GameController GC = GameObject.Find("GameManager").GetComponent<GameController>();
+
+            GC.swapCharacter(character);
+            
+        }
+
+        // Player Movement Upgrades
+        internal void upgradeMovementSpeed()
+        {
+            walkSpeed += 2.0f;
+        }
+
+
+        internal void upgradeJumpPower()
+        {
+            jumpForce += 2.0f;
+        }
+
+        internal void upgradeDashPower()
+        {
+            dashPower += 2.0f;
+        }
+
+
+        internal void upgradeDashCooldown()
+        {
+            if (DashCooldown > _MINIMUM_DASH_COOLDOWN)
+            {
+                DashCooldown -= 0.2f;
+            }
+        }
+
+        // Projectile Launcher Upgrades
+        public void upgradeFireRate()
+        {
+            ProjectileLauncher.upgradeFireRate();
+        }
+
+        public void upgradeProjSize()
+        {
+            ProjectileLauncher.upgradeProjSize();
+        }
+        public void upgradeProjSpeedUp()
+        {
+            ProjectileLauncher.upgradeProjSpeedUp();
+        }
+        public void upgradeProjSpeedDown()
+        {
+            ProjectileLauncher.upgradeProjSpeedDown();
+        }
+        public void upgradeWideShot()
+        {
+            ProjectileLauncher.upgradeWideShot();
+        }
+
+        // Get Stats For new player
+        public Dictionary<string, float> getPlayerStats()
+        {
+            Dictionary<string, float> stats = new Dictionary<string, float>();
+
+            
+
+            return stats;
+        }
+
+        
+    }
 }

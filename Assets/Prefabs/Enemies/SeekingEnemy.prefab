@@ -512,3 +512,4 @@ MonoBehaviour:
   firerate: 1
   projectileLifetime: 0.1
   projectileScale: 1
+  PointsValue: 10

@@ -1,25 +1,34 @@
 
 using UnityEngine;
 
-public class FollowCamera : MonoBehaviour
+namespace angulargame
 {
-    // Start is called before the first frame update
-    public Transform target;
-    public Vector3 offset;
-    [Range(5,20)] public float camSmoothness;
-
-    private void FixedUpdate()
+    public class FollowCamera : MonoBehaviour
     {
-        if (target != null)
+        // Start is called before the first frame update
+        public Transform target;
+        public Vector3 offset;
+        [Range(5,20)] public float camSmoothness;
+
+        private void FixedUpdate()
         {
-            Follow();
+            if (target != null)
+            {
+                Follow();
+            }
+        }
+
+        void Follow()
+        {
+            Vector3 targetPosition = target.position + offset;
+            Vector3 smoothedPosition = Vector3.Lerp(transform.position, targetPosition, camSmoothness * Time.fixedDeltaTime);
+            transform.position = smoothedPosition;
+        }
+
+        public void setTarget(Transform newTarget)
+        {
+            target = newTarget;
         }
     }
 
-    void Follow()
-    {
-        Vector3 targetPosition = target.position + offset;
-        Vector3 smoothedPosition = Vector3.Lerp(transform.position, targetPosition, camSmoothness * Time.fixedDeltaTime);
-        transform.position = smoothedPosition;
-    }
 }
